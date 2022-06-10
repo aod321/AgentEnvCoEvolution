@@ -2,7 +2,18 @@
 
 ```shell
 git clone http://git.thbi.cc/yinzi/AgentEnvCoEvolution.git
-pip install -r requirements.txt
+conda create --name grpcunity python=3.9
+conda activate grpcunity
+pip install dm_env_rpc
+conda install grpcio
+pip install docker
+pip install portpicker
+pip install stable-baselines3
+pip install einops
+pip install opencv-python
+pip install colorama
+pip install pygame
+pip install tqdm
 ```
 
 # 键盘控制
