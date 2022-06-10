@@ -69,26 +69,27 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         if self.save_path is not None:
             os.makedirs(self.save_path, exist_ok=True)
 
-
     def _on_step(self) -> bool:
         if self.n_calls % self.check_freq == 0:
-          # Retrieve training reward
-          x, y = ts2xy(load_results(self.log_dir), 'timesteps')
-          if len(x) > 0:
-              # Mean training reward over the last 100 episodes
-              mean_reward = np.mean(y[-100:])
-              if self.verbose > 0:
-                print(f"Num timesteps: {self.num_timesteps}")
-                print(f"Best mean reward: {self.best_mean_reward:.2f} - Last mean reward per episode: {mean_reward:.2f}")
+            try:
+                x, y = ts2xy(load_results(self.log_dir), 'timesteps')
+                if len(x) > 0:
+                    # Mean training reward over the last 100 episodes
+                    mean_reward = np.mean(y[-100:])
+                    if self.verbose > 0:
+                        print(f"Num timesteps: {self.num_timesteps}")
+                        print(f"Best mean reward: {self.best_mean_reward:.2f} - Last mean reward per episode: {mean_reward:.2f}")
 
-            #   self.model.save(os.path.join(self.save_path, f"{self.num_timesteps}_{mean_reward:.2f}.zip"))
-              # New best model, you could save the agent here
-              if mean_reward > self.best_mean_reward:
-                  self.best_mean_reward = mean_reward
-                  # Example for saving best model
-                  if self.verbose > 0:
-                    print(f"Saving new best model to {self.save_path}/best_model_{uuid}.zip")
-                  self.model.save(os.path.join(self.save_path, f"best_model_{uuid}.zip"))
+                    #   self.model.save(os.path.join(self.save_path, f"{self.num_timesteps}_{mean_reward:.2f}.zip"))
+                    # New best model, you could save the agent here
+                    if mean_reward > self.best_mean_reward:
+                        self.best_mean_reward = mean_reward
+                        # Example for saving best model
+                        if self.verbose > 0:
+                            print(f"Saving new best model to {self.save_path}/best_model_{uuid}.zip")
+                        self.model.save(os.path.join(self.save_path, f"best_model_{uuid}.zip"))
+            except Exception as e:
+                print(e)
         return True
 
 
@@ -137,11 +138,14 @@ class Pipeline():
         return np.flatnonzero(reduced_map == np.argmax(np.bincount(reduced_map))).astype(np.int32)
     
     def save_img_json_from_wave(self, id, wave=None):
-        if not wave:
-            wave = self.wave
-        canvas =  self.PCGWorker_.render(wave, wind_name = "canvas",write_ = False,write_id = 0,output = True, verbose = False)
-        Image.fromarray(canvas).save(os.path.join(self.IMG_DIR, f"{id}_{uuid}.png"))
-        self.PCGWorker_.to_file(wave=wave, filename=os.path.join(self.JSON_DIR, f"{id}_{uuid}.json"))
+        try:
+            if not wave:
+                wave = self.wave
+            # canvas =  self.PCGWorker_.render(wave, wind_name = "canvas",write_ = False,write_id = 0,output = True, verbose = False)
+            # Image.fromarray(canvas).save(os.path.join(self.IMG_DIR, f"{id}_{uuid}.png"))
+            self.PCGWorker_.to_file(wave=wave, filename=os.path.join(self.JSON_DIR, f"{id}_{uuid}.json"))
+        except Exception as e:
+            print(e)
 
     def create_and_join_world(self):
         try:
@@ -206,14 +210,18 @@ class Pipeline():
                 if(np.mean(self.step_rewards) < 0.5):
                     print("Continue training on old map...")
                     continue
-                mutated_wave = self.wave
+                mutated_wave = self.wave.deepcopy()
                 while np.mean(self.step_rewards) > 0.5:
                     evolve_count += 1
                     print(f"Need to evolve, already evolved for: {evolve_count} times")
                     print("Genrating a new map...")
                     mutated_wave = self.PCGWorker_.mutate(mutated_wave, 81)
                     self._SPACE = self.get_space_from_wave(mutated_wave)
-                    self._SEED = np.array(mutated_wave.wave_oriented).astype(np.int32)
+                    result_seed, empty = mutated_wave.get_result()
+                    if empty:
+                        self._SEED = np.ones((81,1,2)).astype(np.int32)
+                    else:
+                        self._SEED = np.array(result_seed).astype(np.int32)
                     # Recreate and join Unity Map World
                     self.create_and_join_world()
                     print("Evlauating on new map...")
@@ -223,8 +231,12 @@ class Pipeline():
                     print(f"mean eposide_rewards on new map: \n {np.mean(self.step_rewards)}")
                 # keep new map seed
                 self.wave = mutated_wave
-                self._SPACE = self.get_space_from_wave(mutated_wave)
-                self._SEED = np.array(mutated_wave.wave_oriented).astype(np.int32)
+                self._SPACE = self.get_space_from_wave(self.wave)
+                result_seed, empty = self.wave.get_result()
+                if empty:
+                    self._SEED = np.ones((81,1,2)).astype(np.int32)
+                else:
+                    self._SEED = np.array(result_seed).astype(np.int32)
                 # Unity render new training map
                 print("Unity render new training map...")
                 self.create_and_join_world()
