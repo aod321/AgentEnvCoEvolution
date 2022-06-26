@@ -37,6 +37,7 @@ parser.add_argument('--test', dest='test', default=False, type=bool)
 parser.add_argument('--start_evolution', dest='start_evolution', default="auto", type=str)
 parser.add_argument('--keep_evolution', dest='keep_evolution', default="auto", type=str)
 parser.add_argument('--restore', dest='restore', default=False, type=bool)
+parser.add_argument('--optimize', dest='restore', default=False, type=bool)
 
 args = parser.parse_args()
 print(args)
@@ -220,7 +221,10 @@ class Pipeline():
                     evolve_count += 1
                     print(f"Need to evolve, already evolved for: {evolve_count} times")
                     print("Genrating a new map...")
-                    mutated_wave = self.PCGWorker_.mutate(mutated_wave, 81)
+                    if args.optimize:
+                        mutated_wave = self.PCGWorker_.mutate_and_optimize(mutated_wave, max_iter = 250,fitness_report = False)
+                    else:
+                        mutated_wave = self.PCGWorker_.mutate(mutated_wave, 81)
                     self._SPACE = self.get_space_from_wave(mutated_wave)
                     result_seed, success = mutated_wave.get_result()
                     if success:
