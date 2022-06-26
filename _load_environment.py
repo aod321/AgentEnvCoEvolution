@@ -103,12 +103,14 @@ class _DemoTasksProcessEnv(_DemoTasksEnv):
     Ensure that the provided running process is closed on exit.
   """
 
-  def __init__(self, connection_details, requested_observations,
+  def __init__(self, connection, requested_observations,
                num_action_repeats, process=None):
+    connection_details, world_name = connection
     super(_DemoTasksProcessEnv,
           self).__init__(connection_details, requested_observations,
                          num_action_repeats)
     self._process = process
+    self._world_name = world_name
 
   def close(self):
     super(_DemoTasksProcessEnv, self).close()
@@ -218,12 +220,15 @@ class EnvironmentSettings(typing.NamedTuple):
       num_action_repeats: Number of times to step the environment with the
         provided action in calls to `step()`.
   """
-  seed: int
-  level_name: str
-  width: int = 96
-  height: int = 72
-  episode_length_seconds: float = 120.0
+  create_world_settings: dict
+  join_world_settings: dict
+  # seed: int
+  # level_name: str
+  # width: int = 96
+  # height: int = 72
+  # episode_length_seconds: float = 120.0
   num_action_repeats: int = 1
+  timescale: int = 2
 
 
 def _validate_environment_settings(settings):
@@ -248,11 +253,11 @@ def load_from_disk(path, settings):
   """
   _validate_environment_settings(settings)
 
-  executable_path = os.path.join(path, 'Linux64Player')
-  libosmesa_path = os.path.join(path, 'external_libosmesa_llvmpipe.so')
-  if not os.path.exists(executable_path) or not os.path.exists(libosmesa_path):
+  # executable_path = os.path.join(path, 'Linux64Player')
+  executable_path = path
+  if not os.path.exists(executable_path):
     raise RuntimeError(
-        'Cannot find dm_memorytasks executable or dependent files at path: {}'
+        'Cannot find executable'
         .format(path))
 
   port = portpicker.pick_unused_port()
@@ -260,28 +265,24 @@ def load_from_disk(path, settings):
   process_flags = [
       executable_path,
       # Unity command-line flags.
-      '-logfile',
-      '-batchmode',
-      '-noaudio',
+      # '-logfile',
+      # '-batchmode',
+      # '-noaudio',
       # Other command-line flags.
-      '--logtostderr',
-      '--server_type=GRPC',
-      '--uri_address=[::]:{}'.format(port),
+      '--Port',
+      f'{port}',
+      '--TimeScale',
+      f'{settings.timescale}',
   ]
-
-  os.environ.update({
-      'UNITY_RENDERER': 'software',
-      'UNITY_OSMESA_PATH': libosmesa_path,
-  })
-
+ 
   process = subprocess.Popen(
       process_flags, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
   if process.poll() is not None:
     raise RuntimeError('Failed to start unity tasks process correctly.')
 
   return _DemoTasksProcessEnv(
-      _connect_to_environment(port, settings), _TASK_OBSERVATIONS,
-      settings.num_action_repeats, process)
+      _connect_to_environment(port, settings.create_world_settings,settings.join_world_settings), _TASK_OBSERVATIONS,
+      settings.num_action_repeats, process), port
 
 
 def load_from_docker(settings, name):
@@ -316,5 +317,5 @@ def load_from_docker(settings, name):
       ports={_DOCKER_INTERNAL_GRPC_PORT: port})
 
   return _DemoTasksContainerEnv(
-      _connect_to_environment(port, settings), _TASK_OBSERVATIONS,
-      settings.num_action_repeats, container)
+      _connect_to_environment(port, settings.create_world_settings,settings.join_world_settings), _TASK_OBSERVATIONS,
+      settings.num_action_repeats, container), port
