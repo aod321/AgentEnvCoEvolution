@@ -1,6 +1,4 @@
 from gym_wrapper import GymFromDMEnv
-import sys
-sys.path.append('../')
 from pcgworker.PCGWorker import *
 import matplotlib.pyplot as plt
 import dm_env
@@ -107,8 +105,8 @@ class WFCUnity3DEnv(GymFromDMEnv):
         except Exception as e:
                 print("Recreate Unity Map World Failed")
                 raise e
-   
-    def render_in_unity(self, map_seed=None):
+            
+    def reset_world_agnet(self, map_seed=None):
         if map_seed is None:
             map_seed = self._SEED
             space = self._SPACE
@@ -116,20 +114,24 @@ class WFCUnity3DEnv(GymFromDMEnv):
             space = self.get_space_from_wave(map_seed)
         print("reset world and agent")
         self._connection.send(
-            dm_env_rpc_pb2.ResetWorldRequest(
-                world_name=self._world_name,
-                settings={
-                    "seed": tensor_utils.pack_tensor(map_seed)
-                }))
+        dm_env_rpc_pb2.ResetWorldRequest(
+            world_name=self._world_name,
+            settings={
+                "seed": tensor_utils.pack_tensor(map_seed)
+            }))
 
         self._connection.send(
-            dm_env_rpc_pb2.ResetRequest(
-                settings={
-                    "agent_pos_space": tensor_utils.pack_tensor(space),
-                    "object_pos_space": tensor_utils.pack_tensor(space)
-                }))
+        dm_env_rpc_pb2.ResetRequest(
+            settings={
+                "agent_pos_space": tensor_utils.pack_tensor(space),
+                "object_pos_space": tensor_utils.pack_tensor(space)
+            }))
         self.reset()
-
+   
+    def render_in_unity(self, map_seed=None):
+        self.create_and_join_world()
+        # self.reset_world_agnet()
+       
     # conditoinal WFC mutation
     def mutate_a_new_map(self, base_wave=None, size=81):
         if base_wave is None:

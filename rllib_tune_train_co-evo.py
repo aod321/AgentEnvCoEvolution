@@ -1,6 +1,4 @@
 import os
-import sys
-sys.path.append('../')
 import ray
 import argparse
 import logging
@@ -14,6 +12,8 @@ import ray.rllib.agents.ppo as ppo
 import ray.rllib.agents.a3c as a3c
 import ray.rllib.agents.impala as impala
 import ray.rllib.agents.dqn as dqn
+import sys
+sys.path.append('../')
 from pcgworker.PCGWorker import *
 
 logger = logging.getLogger(__name__)
@@ -36,13 +36,13 @@ parser.add_argument(
     "Trainer state.",
 )
 parser.add_argument(
-    "--stop-iters", type=int, default=1000, help="Number of iterations to train."
+    "--stop_iters", type=int, default=1000, help="Number of iterations to train."
 )
 parser.add_argument(
-    "--stop-timesteps", type=int, default=1000000, help="Number of timesteps to train."
+    "--stop_timesteps", type=int, default=1000000, help="Number of timesteps to train."
 )
 parser.add_argument(
-    "--stop-reward",
+    "--stop_reward",
     type=float,
     default=9999.0,
     help="Reward at which we stop training.",
@@ -50,7 +50,7 @@ parser.add_argument(
 parser.add_argument(
     "--horizon",
     type=int,
-    default=1000,
+    default=500,
     help="The max. number of `step()`s for any episode (per agent) before "
     "it'll be reset again automatically.",
 )
@@ -61,7 +61,8 @@ parser.add_argument(
     help="The DL framework specifier.",
 )
 parser.add_argument('--algrithm', default="IMPALA", type=str, help='algrithm: IMPALA, A3C, PPO, DQN')
-parser.add_argument("--workers", type=int, default=4)
+parser.add_argument("--train_workers", type=int, default=4)
+parser.add_argument("--eval_workers", type=int, default=4)
 parser.add_argument('--timescale', default=2, type=int, help='timescale for unity3d timesys')
 parser.add_argument('--train_batch_size', default=2048, type=int, help='batch_size for training')
 parser.add_argument('--rollout_fragment_length', default=512, type=int, help='batch_size for training')
@@ -156,7 +157,7 @@ if __name__ == "__main__":
                 "env": "rpc_unity3d",
                 "env_config": {
                     "filename": args.game,
-                    "timescale": args.timescale          # Unity时间默认2倍速
+                    "timescale": args.timescale # Unity时间默认2倍速
                 },
                 # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
                 "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
@@ -164,10 +165,23 @@ if __name__ == "__main__":
                 #     "custom_model": "my_model",
                 #     "vf_share_layers": True,
                 # },
-                "num_workers": args.workers,  # parallelism
-                "framework": args.framework,
-                # "evaluation_interval": 10,
-                "evaluation_duration": 9,
+                "train_batch_size": args.train_batch_size,
+                "rollout_fragment_length": args.rollout_fragment_length,
+                "num_workers": args.train_workers,  # parallelism
+                "horizon": args.horizon,
+                "framework": "torch",
+                "evaluation_num_workers": args.eval_workers,
+                "custom_eval_function": custom_eval_function,
+                # Enable evaluation, once per training iteration.
+                "evaluation_interval": 1,
+                # Run 10 episodes each time evaluation runs.
+                "evaluation_duration": 10,  
+                "create_env_on_driver": False,
+                "explore": True,
+                "exploration_config":{
+                    "type": "EpsilonGreedy",
+                },
+                "log_level": "DEBUG"
         }
         stop = {
             "training_iteration": args.stop_iters,
