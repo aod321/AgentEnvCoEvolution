@@ -13,7 +13,11 @@ from dm_env_rpc.v1 import tensor_utils
 import grpc
 from time import sleep
 import numpy as np
-
+import time
+import argparse
+parser = argparse.ArgumentParser(description='loop test')
+parser.add_argument('--ports', dest='port', default=30051, type=int)
+args = parser.parse_args()
 import pygame
 
 _FRAMES_PER_SEC = 50
@@ -54,11 +58,10 @@ _TEMP = np.array(wave_seed.wave_oriented).astype(np.int32)
 _SPACE = space
 
 # _OBSERVATION_CAMERA = 'Camera'
-
 def main():
-    pygame.init()
+    # pygame.init()
 
-    port = 30051
+    port = args.port
     timeout = 10
     
     with grpc.insecure_channel(f'localhost:{port}') as channel:
@@ -72,11 +75,15 @@ def main():
             "object_pos_space": _SPACE
         })
         print("joined world:", world_name)
+        count =0
         with env:
-            while True:
+            start = time.time()
+            while count<10000:
                 actions = {_ACTION_PADDLE: [7],
                            _ACTION_JUMP: [1]}
                 timestep = env.step(actions)
+                count += 1
+            print("time:", time.time() - start)
         connection.send(dm_env_rpc_pb2.DestroyWorldRequest(world_name=world_name))
 
 if __name__ == "__main__":

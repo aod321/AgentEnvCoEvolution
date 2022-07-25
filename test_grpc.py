@@ -124,7 +124,7 @@ def main():
                 image = pygame.transform.flip(image, False, True)
                 window_surface.blit(image, (0, 0))
                 pygame.display.update()
-                pygame.time.wait(_FRAME_DELAY_MS)
+                # pygame.time.wait(_FRAME_DELAY_MS)
             
         # connection.send(dm_env_rpc_pb2.DestroyWorldRequest(world_name=world_name))
 

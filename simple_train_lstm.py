@@ -24,6 +24,9 @@ import os
 from PIL import Image
 import copy
 import time
+from stable_baselines3.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold, CallbackList
+from sb3_contrib import RecurrentPPO
+
 
 # os.system("export GRPC_ENABLE_FORK_SUPPORT=1")
 uuid = str(uuid_lib.uuid4())[:5]
@@ -48,7 +51,6 @@ evlaute_steps = args.evlaute_steps
 evol_evaluate_steps = args.evol_evaluate_steps
 restore = args.restore
 evlaute_eposide = args.evlaute_eposide
-
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
     """
@@ -109,7 +111,7 @@ class Pipeline():
         os.makedirs(self.IMG_DIR, exist_ok=True)
         os.makedirs(self.JSON_DIR, exist_ok=True)
         self.TASK_OBSERVATIONS = ['RGBA_INTERLEAVED', 'reward', 'done']
-        self.PORT = 30051
+        self.PORT = 20051
         # create worker
         self.PCGWorker_ = PCGWorker(9,9)
         # start from empty aera
@@ -124,14 +126,24 @@ class Pipeline():
         # initial empty space world
         self.create_and_join_world()
         # self.best_mean = -np.inf
-        self.model = PPO("CnnPolicy", self.gym_env, verbose=1)
+        # self.model = PPO("CnnPolicy", self.gym_env, verbose=1)
+        self.model = RecurrentPPO("CnnLstmPolicy", self.gym_env, verbose=1)
         if restore:
             try:
                 print("Loading Parmaters")
                 self.model.load(os.path.join(self.LOGDIR, f"last_model_{uuid}.zip"))
             except Exception as e:
                 print(e)
-        self.callback = SaveOnBestTrainingRewardCallback(check_freq=self.CHECK_FREQ, log_dir=self.LOGDIR)
+        self.save_callback = SaveOnBestTrainingRewardCallback(check_freq=self.CHECK_FREQ, log_dir=self.LOGDIR)
+        stop_train_callback = StopTrainingOnRewardThreshold(reward_threshold=0.5, verbose=1)
+        # self.eval_callback = EvalCallback(self.gym_env, callback_on_new_best=stop_train_callback, verbose=1)
+        os.makedirs("./best_eval_logs", exist_ok=True)
+        self.eval_callback = EvalCallback(self.model.env, best_model_save_path='./best_eval_logs/',
+                             log_path='./best_eval_logs/',
+                              eval_freq=10000, 
+                              callback_on_new_best=stop_train_callback,
+                             deterministic=False, render=False)
+        self.callback = CallbackList([self.save_callback, self.eval_callback])
         self.step_rewards = []
     
     def get_space_from_wave(self, wave=None):
@@ -154,7 +166,7 @@ class Pipeline():
         except Exception as e:
             print(e)
     
-    def reset_world_agnet(self, map_seed=None):
+    def reset_world_agent(self, map_seed=None):
         if map_seed is None:
             map_seed = self._SEED
             space = self._SPACE
@@ -236,20 +248,20 @@ class Pipeline():
                 self.evaluate(maxeposides=evlaute_eposide, maxsteps=evlaute_steps, evolution=evolution)
                 mean_reward = np.mean(self.step_rewards)
                 print(f"Evaluation: train_eposide: {eposide}/{train_eposides}, mean_reward: {mean_reward}")
-                # Using wfc to mutate a new env unitl not more than half of the eposides are rewarded
+                # Using wfc to mutate a new env until not more than half of the eposides are rewarded
                 evolve_count = 0
                 if(np.mean(self.step_rewards) < 0.5):
                     print("Continue training on old map...")
                     continue
                 mutated_wave = copy.deepcopy(self.wave)
-                while np.mean(self.step_rewards) > 0.5:
+                while np.mean(self.step_rewards) >= 0.5:
                     evolve_count += 1
                     print(f"Need to evolve, already evolved for: {evolve_count} times")
                     print("Genrating a new map...")
                     if args.optimize:
-                        mutated_wave = self.PCGWorker_.mutate_and_optimize(mutated_wave, max_iter = 250,fitness_report = False)
+                        mutated_wave = self.PCGWorker_.mutate_and_optimize(self.wave, max_iter = 250,fitness_report = False)
                     else:
-                        mutated_wave = self.PCGWorker_.mutate(mutated_wave, 81)
+                        mutated_wave = self.PCGWorker_.mutate(self.wave, 81)
                     self._SPACE = self.get_space_from_wave(mutated_wave)
                     result_seed, success = mutated_wave.get_result()
                     if success:
@@ -257,7 +269,7 @@ class Pipeline():
                     else:
                         self._SEED = np.ones((81,1,2)).astype(np.int32)
                     # Recreate and join Unity Map World
-                    self.reset_world_agnet()
+                    self.reset_world_agent()
                     # self.create_and_join_world()
                     print("Evlauating on new map...")
                     evolution = "auto" if not test else args.keep_evolution
@@ -274,7 +286,7 @@ class Pipeline():
                     self._SEED = np.ones((81,1,2)).astype(np.int32)
                 # Unity render new training map
                 print("Unity render new training map...")
-                self.reset_world_agnet()
+                self.reset_world_agent()
                 # self.create_and_join_world()
                 print("Training on new map...")
         finally:
