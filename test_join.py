@@ -52,6 +52,7 @@ reduced_map = test_reduce.reshape(-1)
 space = np.flatnonzero(reduced_map == np.argmax(np.bincount(reduced_map))).astype(np.int32)
 _TEMP = np.array(wave_seed.wave_oriented).astype(np.int32)
 _SPACE = space
+_WORLD_NAME = "World_0"
 
 # _OBSERVATION_CAMERA = 'Camera'
 
@@ -66,16 +67,15 @@ def main():
         connection = dm_env_rpc_connection.Connection(channel)
         print(connection)
 
-        print("create and join world")
-        env, world_name = dm_env_adaptor.create_and_join_world(
-        connection, create_world_settings={"seed": _TEMP}, join_world_settings={
+        print(f"join world: {_WORLD_NAME}")
+        env = dm_env_adaptor.join_world(connection, world_name=_WORLD_NAME, join_world_settings={
             "agent_pos_space": _SPACE,
             "object_pos_space": _SPACE
         })
-        print("joined world:", world_name)
+        print("joined world:", _WORLD_NAME)
 
         window_surface = pygame.display.set_mode((84,84), 0, 32)
-        pygame.display.set_caption(world_name)
+        pygame.display.set_caption(_WORLD_NAME)
         window_surface.fill((128, 128, 128))
         with env:
             keep_running = True
@@ -108,26 +108,23 @@ def main():
                         elif event.key == pygame.K_ESCAPE:
                             keep_running = False
                             break
-                # if requested_action != _ACTION_NOTHING or is_jumping != 0:
-                try:
-                    actions = {_ACTION_PADDLE: [requested_action],
-                            _ACTION_JUMP: [is_jumping]}
-                    timestep = env.step(actions)
-                    # print(timestep)
-                    # if timestep.reward != 0:
-                        # print("reward:", timestep.reward)
-                    if(timestep.reward):
-                        print("reward: ", timestep.reward)
-                    # print(dir(image))
-                    # print(image[:10])
-                    pixels = timestep.observation[_OBSERVATION_CAMERA]
-                    image = pygame.image.frombuffer(pixels, (84, 84), 'RGBA')
-                    image = pygame.transform.flip(image, False, True)
-                    window_surface.blit(image, (0, 0))
-                    pygame.display.update()
-                    # pygame.time.wait(_FRAME_DELAY_MS)
-                finally:
-                    pass
+
+                actions = {_ACTION_PADDLE: [requested_action],
+                           _ACTION_JUMP: [is_jumping]}
+                timestep = env.step(actions)
+                # print(timestep)
+                # if timestep.reward != 0:
+                    # print("reward:", timestep.reward)
+                if(timestep.reward):
+                    print("reward: ", timestep.reward)
+                # print(dir(image))
+                # print(image[:10])
+                pixels = timestep.observation[_OBSERVATION_CAMERA]
+                image = pygame.image.frombuffer(pixels, (84, 84), 'RGBA')
+                image = pygame.transform.flip(image, False, True)
+                window_surface.blit(image, (0, 0))
+                pygame.display.update()
+                # pygame.time.wait(_FRAME_DELAY_MS)
             
         # connection.send(dm_env_rpc_pb2.DestroyWorldRequest(world_name=world_name))
 

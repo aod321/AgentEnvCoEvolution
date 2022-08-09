@@ -6,6 +6,11 @@
 
 <video src="https://cloud.tsinghua.edu.cn/f/0319ceed3f214085ba1f/?dl=1" controls="controls" width="500" height="300"></video>
 
+# 多世界支持
+
+[Gitee Wiki](https://gitee.com/aod321/AgentEnvCoEvolution/wikis/%E5%A4%9A%E4%B8%96%E7%95%8C%E6%94%AF%E6%8C%81)
+
+[THBI Git WIKI](http://git.thbi.cc/yinzi/AgentEnvCoEvolution/wiki/%E5%A4%9A%E4%B8%96%E7%95%8C%E6%94%AF%E6%8C%81)
 
 # 安装
 
@@ -29,8 +34,7 @@ pip install tqdm
 
 1. 开启Unity工程TIleMapRender，运行，运行成功会提示监听端口
 2. 运行test_grpc.py
-3. 鼠标焦点放在pygame窗口中，然后使用键盘控制
-   | 按键 | 动作   |
+3. 鼠标焦点放在pygame窗口中，然后使用键盘控制| 按键 | 动作   |
    | ---- | ------ |
    | ↑   | 向前走 |
    | ↓   | 向后走 |
