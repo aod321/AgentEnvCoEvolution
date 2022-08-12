@@ -73,6 +73,7 @@ def main():
             "object_pos_space": _SPACE
         })
         print("joined world:", world_name)
+        # env.reset()
 
         window_surface = pygame.display.set_mode((84,84), 0, 32)
         pygame.display.set_caption(world_name)
