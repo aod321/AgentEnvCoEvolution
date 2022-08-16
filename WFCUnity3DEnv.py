@@ -1,6 +1,4 @@
 from gym_wrapper import GymFromDMEnv
-import sys
-sys.path.append("../")
 from pcgworker.PCGWorker import *
 import matplotlib.pyplot as plt
 import dm_env
@@ -9,6 +7,8 @@ import einops
 from dm_env_rpc.v1 import dm_env_adaptor
 from dm_env_rpc.v1 import tensor_utils
 from dm_env_rpc.v1 import dm_env_rpc_pb2
+import numpy as np
+import random
 
 
 def dm_env_creator_from_port(config, port):
@@ -35,7 +35,8 @@ def dm_env_creator_from_local_disk(config):
 
 # Add WFC and gRPC support for unity3D RLLib enviroment
 class WFCUnity3DEnv(GymFromDMEnv):
-    def __init__(self, env: dm_env.Environment=None, max_steps=2000, wfc_size=9, config=None, file_name=None, port=30051):
+    def __init__(self, env: dm_env.Environment=None, max_steps=2000, wfc_size=9, config=None, file_name=None, port=30051, random_seed=None):
+        self.set_random_seed(random_seed)
         self.world_name = None
         self.height_map = None
         # create worker
@@ -98,6 +99,11 @@ class WFCUnity3DEnv(GymFromDMEnv):
         reduced_map = einops.reduce(mask,"(h a) (w b) -> h w", a=20, b=20, reduction='max').reshape(-1)
         # use maxium playable area as probility space
         return np.flatnonzero(reduced_map == np.argmax(np.bincount(reduced_map))).astype(np.int32)
+    
+    def set_random_seed(self, seed=None):
+        if seed:
+            np.random.seed(seed)
+            random.seed(seed)
 
     def create_and_join_world(self):
         try:
