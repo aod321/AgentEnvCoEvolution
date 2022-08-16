@@ -88,7 +88,10 @@ if __name__ == "__main__":
             print(f"Training: eposide: {i}/{TRAIN_EPOSIDES} for {TRAIN_STEPS} steps")
             # 1. 训练一定步数
             # model.learn(total_timesteps=TRAIN_STEPS, callback=save_callback)
+            start_time = time.time()
             model.learn(total_timesteps=TRAIN_STEPS)
+            total_time_multi = time.time() - start_time
+            print(f"Took {total_time_multi:.2f}s for multiprocessed version - {TRAIN_STEPS / total_time_multi:.2f} FPS")
             print(f"Training Done for eposide: {i}/{TRAIN_EPOSIDES}, now evaluate for {EVAL_EPOSIDES} eposides")
             # 2. 评估一定轮数
             mean_reward, std_reward = evaluate_policy(model, vec_env, n_eval_episodes=EVAL_EPOSIDES, deterministic=False)
@@ -143,7 +146,7 @@ if __name__ == "__main__":
                         std_rewards_list.append(temp_std)
                         extra_rewards_list.append(temp_mean_rewards)
                         writer.add_scalar(f"evo_rewards_{evolve_count}", temp_mean_rewards, global_step=i)
-                    for i in range(extra_rewards_list):
+                    for i in range(len(extra_rewards_list)):
                         print(f"mean reward on map{i}: {extra_rewards_list[i]}, std is : {std_rewards_list[i]}")
             else:
                 print(f"Continue training without evolution")

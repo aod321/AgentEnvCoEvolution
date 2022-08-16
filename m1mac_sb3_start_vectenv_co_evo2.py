@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../")
 from random import random
 from stable_baselines3 import A2C, PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecMonitor
@@ -18,7 +20,7 @@ from stable_baselines3.common.results_plotter import load_results, ts2xy
 from datetime import datetime
 import numpy as np
 from pcgworker.PCGWorker import *
-
+from torch.utils.tensorboard import SummaryWriter
 
 
 MAX_STEPS_PER_EPOSIDE = 2000
@@ -85,7 +87,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
 
 if __name__ == "__main__":
-    DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     pcgworker = PCGWorker(9,9)
     # Create log dir
     current_time = datetime.now().strftime('%d-%m-%y-%H_%M')
@@ -94,11 +95,17 @@ if __name__ == "__main__":
     # 参数定义
     gamepath = "/home/jiagpu7/0815_newbuild_linux_maxsteps/0815_newbuild_linux_maxsteps.x86_64"
     gamename = "0815_newbuild_linux_maxsteps.x86_64"
-    num_env = 12  # Number of env to use
+    num_env = 10  # Number of env to use
+    # 是否在每轮进化最后评估一下所有历史环境环境
+    EXTRA_EVAL = True
     TRAIN_EPOSIDES = 2000
     TRAIN_STEPS = 25000
     EVAL_EPOSIDES = 10
     REWARD_THREASHOLD = 0.5
+    # Tensroboard log
+    tb_logs_path = f"./runs/{current_time}"
+    os.makedirs(tb_logs_path, exist_ok=True)
+    writer = SummaryWriter(tb_logs_path)
     # 保险起见,测试的时候把以前的进程都杀掉
     print("killing all old processes")
     os.system(f"nohup pidof {gamename} | xargs kill -9> /dev/null 2>&1 & ")
@@ -115,8 +122,9 @@ if __name__ == "__main__":
     eval_env.render_in_unity()
     # Create the callback: check every 5000 steps
     save_callback = SaveOnBestTrainingRewardCallback(check_freq=5000, log_dir=log_dir)
-    model = PPO('CnnPolicy', vec_env, verbose=0,  device=DEVICE)
+    model = PPO('CnnPolicy', vec_env, verbose=0,  device=torch.device("cuda:2"))
     sum_evo_count = 0
+    map_collections = []
     try:
         print("Evaluation before training: Random Agent")
         # random_agent vecenv评估, before training
@@ -133,6 +141,7 @@ if __name__ == "__main__":
             eval_env.render_in_unity()
             mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=EVAL_EPOSIDES, deterministic=False)
             print(f'Evaluatioon Done: Mean reward: {mean_reward} +/- {std_reward:.2f}')
+            writer.add_scalar("eposide_mean_reward", mean_reward, global_step=i)
             # 3. 根据mean_reward选择进化方向
             # 3.1 平均reward >=0.5则从当前种子进化一张新地图,并且继续评估
             # 3.2 否则停止进化, 保留当前进化来的地图继续学习
@@ -145,8 +154,8 @@ if __name__ == "__main__":
                 temp_wave = vec_env.env_method(method_name="get_wave", indices=current_env)[0]
                 eval_env.set_wave(temp_wave)
                 eval_env.render_in_unity()
-                print("Saving midlle map to json file...")
-                pcgworker.to_file(wave=temp_wave, filename=os.path.join(log_dir, f'midlle_{sum_evo_count}_{evolve_count}_{current_time}.json'))
+                print("Saving middle map to json file...")
+                pcgworker.to_file(wave=temp_wave, filename=os.path.join(log_dir, f'{sum_evo_count}_{evolve_count}_{current_time}_middle.json'))
                 print("Evaluating on this new map again ...")
                 mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=EVAL_EPOSIDES, deterministic=False)
                 print(f'Evaluation Done: Mean reward on new map: {mean_reward} +/- {std_reward:.2f}')
@@ -164,20 +173,35 @@ if __name__ == "__main__":
                     current_env = 0
                 # set map to new env
                 base_wave = temp_wave
+                map_collections.append(temp_wave)
                 vec_env.env_method(method_name="set_wave", wave=base_wave, indices=current_env)
                 vec_env.env_method(method_name="render_in_unity", indices=current_env)
                 print("Save current map to json file...")
                 current_time =  time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())
                 pcgworker.to_file(wave=base_wave, filename=os.path.join(log_dir, f'{sum_evo_count}_{current_time}.json'))
                 print("Save current model to file...")
-                model.save(os.path.join(log_dir, "{sum_evo_count}_{current_time}.pth"))
+                model.save(os.path.join(log_dir, f"{sum_evo_count}_{current_time}.pth"))
                 print("Evaluating on current all map")
                 mean_reward_1, std_reward_1 = evaluate_policy(model, vec_env, n_eval_episodes=EVAL_EPOSIDES * num_env, deterministic=False)
                 print(f'Evaluation on all Done: Mean reward on all map: {mean_reward} +/- {std_reward:.2f}')
+                if EXTRA_EVAL:
+                    print("Extra evaluate on all old maps:")
+                    extra_rewards_list = []
+                    std_rewards_list = []
+                    for i, iwave in enumerate(map_collections):
+                        print(f"evaluating on map {i}:")
+                        eval_env.set_wave(wave=iwave)
+                        eval_env.render_in_unity()
+                        temp_mean_rewards, temp_std = evaluate_policy(model, eval_env, n_eval_episodes=50, deterministic=False)
+                        std_rewards_list.append(temp_std)
+                        extra_rewards_list.append(temp_mean_rewards)
+                        writer.add_scalar(f"evo_rewards_{evolve_count}", temp_mean_rewards, global_step=i)
+                    for i in range(len(extra_rewards_list)):
+                        print(f"mean reward on map{i}: {extra_rewards_list[i]}, std is : {std_rewards_list[i]}")
             else:
                 print(f"Continue training without evolution")
     finally:
-        current_time =  time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())
+        current_time = time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime())
         print("Save current model to file...")
         model.save(os.path.join(log_dir, "{current_time}_interuppted.pth"))
         vec_env.close()
