@@ -127,6 +127,8 @@ def main():
                 # pygame.time.wait(_FRAME_DELAY_MS)
             
         # connection.send(dm_env_rpc_pb2.DestroyWorldRequest(world_name=world_name))
+        connection.send(dm_env_rpc_pb2.LeaveWorldRequest())
+        
 
 if __name__ == "__main__":
     main()

@@ -23,7 +23,8 @@ from dm_env_rpc.v1 import error
 from dm_env_rpc.v1 import tensor_utils
 
 # Maximum number of times to attempt gRPC connection.
-_MAX_CONNECTION_ATTEMPTS = 10
+_MAX_CONNECTION_ATTEMPTS = 2
+_TIME_OUT = 5
 
 # Port to expect the docker environment to internally listen on.
 _DOCKER_INTERNAL_GRPC_PORT = 30051
@@ -123,10 +124,10 @@ def _check_grpc_channel_ready(channel):
   """Helper function to check the gRPC channel is ready N times."""
   for _ in range(_MAX_CONNECTION_ATTEMPTS - 1):
     try:
-      return grpc.channel_ready_future(channel).result(timeout=1)
+      return grpc.channel_ready_future(channel).result(timeout=_TIME_OUT)
     except grpc.FutureTimeoutError:
       pass
-  return grpc.channel_ready_future(channel).result(timeout=1)
+  return grpc.channel_ready_future(channel).result(timeout=_TIME_OUT)
 
 
 def _can_send_message(connection):
@@ -266,8 +267,8 @@ def load_from_disk(path, settings):
       executable_path,
       # Unity command-line flags.
       # '-logfile',
-      # '-batchmode',
-      # '-noaudio',
+      '-force-gfx-direct',
+      '-noaudio',
       # Other command-line flags.
       '--Port',
       f'{port}',

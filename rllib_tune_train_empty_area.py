@@ -16,7 +16,7 @@ from pcgworker.PCGWorker import *
 
 # argparser
 parser = argparse.ArgumentParser(description='RLlib multi-thread sampling Unity3D envs example')
-parser.add_argument('--algrithm', default="IMPALA", type=str, help='algrithm: IMPALA, PPO, DQN')
+parser.add_argument('--algrithm', default="PPO", type=str, help='algrithm: IMPALA, PPO, DQN')
 parser.add_argument('--game', default="/Users/yinzi/Downloads/test/m1_map_rpc_built_x64.app/Contents/MacOS/tilemap_render", type=str, help='path to built unity runtime')
 parser.add_argument('--workers', default=4, type=int, help='workers number: 1, 4, 8, 16')
 parser.add_argument('--train_batch_size', default=2048, type=int, help='batch_size for training')

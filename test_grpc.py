@@ -70,7 +70,8 @@ def main():
         env, world_name = dm_env_adaptor.create_and_join_world(
         connection, create_world_settings={"seed": _TEMP}, join_world_settings={
             "agent_pos_space": _SPACE,
-            "object_pos_space": _SPACE
+            "object_pos_space": _SPACE,
+            "max_steps": 2000
         })
         print("joined world:", world_name)
         # env.reset()
@@ -114,6 +115,9 @@ def main():
                     actions = {_ACTION_PADDLE: [requested_action],
                             _ACTION_JUMP: [is_jumping]}
                     timestep = env.step(actions)
+                    done = timestep.observation['done']
+                    if done:
+                        print(done)
                     # print(timestep)
                     # if timestep.reward != 0:
                         # print("reward:", timestep.reward)
@@ -126,7 +130,7 @@ def main():
                     image = pygame.transform.flip(image, False, True)
                     window_surface.blit(image, (0, 0))
                     pygame.display.update()
-                    # pygame.time.wait(_FRAME_DELAY_MS)
+                    pygame.time.wait(_FRAME_DELAY_MS)
                 finally:
                     pass
             

@@ -1,4 +1,6 @@
 from gym_wrapper import GymFromDMEnv
+import sys
+sys.path.append("../")
 from pcgworker.PCGWorker import *
 import matplotlib.pyplot as plt
 import dm_env
@@ -14,7 +16,8 @@ def dm_env_creator_from_port(config, port):
                     create_world_settings={"seed": config["seed"]},
                     join_world_settings={
                                         "agent_pos_space": config["agent_pos_space"],
-                                        "object_pos_space": config["object_pos_space"]
+                                        "object_pos_space": config["object_pos_space"],
+                                        "max_steps": config["max_steps"]
                                         }
                     )
     dm_env = dm_tasks._DemoTasksProcessEnv(Unity_connection_details, config["OBSERVATIONS"], num_action_repeats=config["num_action_repeats"])
@@ -23,14 +26,16 @@ def dm_env_creator_from_port(config, port):
 def dm_env_creator_from_local_disk(config):
     settings = dm_tasks.EnvironmentSettings(create_world_settings={"seed": config["seed"]},join_world_settings={
                 "agent_pos_space": config["agent_pos_space"],
-                "object_pos_space":  config["object_pos_space"]}, timescale=config["timescale"])
+                "object_pos_space":  config["object_pos_space"],
+                "max_steps": config["max_steps"]}, 
+                timescale=config["timescale"])
     dm_env = dm_tasks.load_from_disk(config["filename"], settings)
     return dm_env
 
 
 # Add WFC and gRPC support for unity3D RLLib enviroment
 class WFCUnity3DEnv(GymFromDMEnv):
-    def __init__(self, env: dm_env.Environment=None, wfc_size=9, config=None, file_name=None, port=30051):
+    def __init__(self, env: dm_env.Environment=None, max_steps=2000, wfc_size=9, config=None, file_name=None, port=30051):
         self.world_name = None
         self.height_map = None
         # create worker
@@ -41,12 +46,14 @@ class WFCUnity3DEnv(GymFromDMEnv):
         self._SPACE = self.get_space_from_wave(self.wave)
         # all empty tile
         self._SEED = np.ones((wfc_size * wfc_size,1,2)).astype(np.int32)
+        self._MAXSTEPS = max_steps
         self.port = port
         if config is None:
             config = {
                 "seed": self._SEED,
                 "agent_pos_space": self._SPACE,
                 "object_pos_space": self._SPACE,
+                "max_steps": self._MAXSTEPS,
                 "OBSERVATIONS": self.TASK_OBSERVATIONS,
                 "num_action_repeats": 1,
                 "filename": file_name,
@@ -62,6 +69,8 @@ class WFCUnity3DEnv(GymFromDMEnv):
                 config["agent_pos_space"] = self._SPACE
             if "object_pos_space" not in config:
                 config["object_pos_space"] = self._SPACE
+            if "max_steps" not in config:
+                config["max_steps"] = self._MAXSTEPS
             if "OBSERVATIONS" not in config:
                 config["OBSERVATIONS"] = self.TASK_OBSERVATIONS
             if "num_action_repeats" not in config:
@@ -96,7 +105,8 @@ class WFCUnity3DEnv(GymFromDMEnv):
                                     create_world_settings={"seed": self._SEED},
                                     join_world_settings={
                                                         "agent_pos_space": self._SPACE,
-                                                        "object_pos_space": self._SPACE
+                                                        "object_pos_space": self._SPACE,
+                                                        "max_steps": self._MAXSTEPS
                                                         }
                                     )
             self.connection_details ,self.world_name = connection
@@ -106,7 +116,7 @@ class WFCUnity3DEnv(GymFromDMEnv):
                 print("Recreate Unity Map World Failed")
                 raise e
             
-    def reset_world_agnet(self, map_seed=None):
+    def reset_world_agent(self, map_seed=None):
         if map_seed is None:
             map_seed = self._SEED
             space = self._SPACE
@@ -120,17 +130,17 @@ class WFCUnity3DEnv(GymFromDMEnv):
                 "seed": tensor_utils.pack_tensor(map_seed)
             }))
 
-        self._connection.send(
-        dm_env_rpc_pb2.ResetRequest(
-            settings={
-                "agent_pos_space": tensor_utils.pack_tensor(space),
-                "object_pos_space": tensor_utils.pack_tensor(space)
-            }))
+        # rejoin
+        self._connection.send(dm_env_rpc_pb2.JoinWorldRequest(world_name=self._world_name, settings={
+            "agent_pos_space": tensor_utils.pack_tensor(space),
+            "object_pos_space": tensor_utils.pack_tensor(space),
+            "max_steps": tensor_utils.pack_tensor(self._MAXSTEPS)
+        }))
         self.reset()
    
     def render_in_unity(self, map_seed=None):
-        self.create_and_join_world()
-        # self.reset_world_agnet()
+        # self.create_and_join_world()
+        return self.reset_world_agent()
        
     # conditoinal WFC mutation
     def mutate_a_new_map(self, base_wave=None, size=81):
