@@ -19,15 +19,16 @@ import pygame
 _FRAMES_PER_SEC = 50
 _FRAME_DELAY_MS = int(1000.0 // _FRAMES_PER_SEC)
 
-_ACTION_NOTHING = 0
-_ACTION_LOOKLEFT = 1
-_ACTION_LOOKRIGHT = 2
-_ACTION_LOOKUP = 3
-_ACTION_LOOKDOWN = 4
-_ACTION_LEFT = 5
-_ACTION_RIGHT = 6
-_ACTION_FORWARD = 7
-_ACTION_BACKWARD = 8
+_ACTION_NOTHING = 7
+# _ACTION_LOOKUP = 3
+# _ACTION_LOOKDOWN = 4
+_ACTION_FORWARD = 0
+_ACTION_BACKWARD = 1
+_ACTION_LEFT = 2
+_ACTION_RIGHT = 3
+_ACTION_LOOKLEFT = 4
+_ACTION_LOOKRIGHT = 5
+_ACTION_SLOWFORWARD = 6
 
 _ACTION_PADDLE = 'paddle'
 _ACTION_JUMP = 'jump'
@@ -46,10 +47,15 @@ from pcgworker.PCGWorker import *
 import einops
 PCGWorker_ = PCGWorker(9,9)
 wave_seed = PCGWorker_.generate()
-mask , _ = PCGWorker_.connectivity_analysis(wave = wave_seed,visualize_ = False, to_file = False)
-test_reduce = einops.reduce(mask,"(h a) (w b) -> h w", a=20, b=20, reduction='max')
-reduced_map = test_reduce.reshape(-1)
-space = np.flatnonzero(reduced_map == np.argmax(np.bincount(reduced_map))).astype(np.int32)
+mask , canvas = PCGWorker_.connectivity_analysis(wave = wave_seed,visualize_ = False, to_file = False)
+plt.imshow(canvas)
+plt.pause(0.01)
+maxarg = np.argmax(np.bincount(mask.reshape(-1)))
+mask[mask!=maxarg] = 0
+mask[mask==maxarg] = 1
+reduced_map = einops.reduce(mask,"(h a) (w b) -> h w", a=20, b=20, reduction='max').reshape(-1)
+space = np.flatnonzero(reduced_map).astype(np.int32)
+print(space)
 _TEMP = np.array(wave_seed.wave_oriented).astype(np.int32)
 _SPACE = space
 
@@ -70,8 +76,8 @@ def main():
         env, world_name = dm_env_adaptor.create_and_join_world(
         connection, create_world_settings={"seed": _TEMP}, join_world_settings={
             "agent_pos_space": _SPACE,
-            "object_pos_space": _SPACE,
-            "max_steps": 2000
+            "object_pos_space": _SPACE
+            # "max_steps": None
         })
         print("joined world:", world_name)
         # env.reset()
@@ -102,9 +108,9 @@ def main():
                         elif event.key == pygame.K_e:
                             requested_action = _ACTION_LOOKRIGHT
                         elif event.key == pygame.K_r:
-                            requested_action = _ACTION_LOOKUP
-                        elif event.key == pygame.K_f:
-                            requested_action = _ACTION_LOOKDOWN
+                            requested_action = _ACTION_SLOWFORWARD
+                        # elif event.key == pygame.K_f:
+                            # requested_action = _ACTION_LOOKDOWN
                         elif event.key == pygame.K_SPACE:
                             is_jumping = 1
                         elif event.key == pygame.K_ESCAPE:

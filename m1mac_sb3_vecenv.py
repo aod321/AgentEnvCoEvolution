@@ -71,7 +71,7 @@ if __name__ == '__main__':
         # model = A2C('CnnPolicy', vec_env, verbose=0,  device=DEVICE)
         model = DQN('CnnPolicy', vec_env, verbose=0,  device=DEVICE)
         print("trainning")
-        n_timesteps = 2000
+        n_timesteps = 100000
         # # Multiprocessed RL Training
         start_time = time.time()
         model.learn(n_timesteps)
@@ -84,6 +84,7 @@ if __name__ == '__main__':
         # print(f'Mean reward: {mean_reward} +/- {std_reward:.2f}')
 
     finally:
+        model.save("m1dqn")
         if vec_env:
             vec_env.close()
         print("killing all old processes")

@@ -1,18 +1,44 @@
-# 交互原理示意图
+# Framework
 
 ![示意图](https://cloud.tsinghua.edu.cn/f/718a8682c063447e979b/?dl=1)
 
-# 协同演化过程演示
+# Unity3D dm_env_rpc Server implementation
+Due to the large size of the complete project file, only the Scripts are kept.
 
-<video src="https://cloud.tsinghua.edu.cn/f/0319ceed3f214085ba1f/?dl=1" controls="controls" width="500" height="300"></video>
+[GRPCServer repo](https://github.com/aod321/GRPCServer)
+# Agent-world co-evolution
 
-# 多世界支持
+<!-- this link magically rendered as video, unfortunately not in docs -->
 
+
+<!--
+<a href='https://cloud.tsinghua.edu.cn/f/0319ceed3f214085ba1f/?dl=1' >
+<div align="center">
+  <img src="http://arogozhnikov.github.io/images/einops/einops_video.gif" alt="einops package examples" />
+  <br>
+  <small><a href='https://cloud.tsinghua.edu.cn/f/0319ceed3f214085ba1f/?dl=1'>This video in high quality (mp4)</a></small>
+  <br><br>
+</div>
+</a>
+-->
+![](https://cloud.tsinghua.edu.cn/f/efdd19d0ed444bccaa98/?dl=1)
+![](https://cloud.tsinghua.edu.cn/f/bf6468c7360b41e99653/?dl=1)
+# Multi-world and Multi-agent 
+
+## Demos
+
+1. multi-agent
+![multi-agent](https://cloud.tsinghua.edu.cn/f/d3a60a1b4c8e417a8572/?dl=1)
+
+2. multi-world and multi-agent
+![multi-world&multi-agent](https://cloud.tsinghua.edu.cn/f/28b5e72dd2fd4878901e/?dl=1)
+
+## Development Diary(in Chinese)
 [Gitee Wiki](https://gitee.com/aod321/AgentEnvCoEvolution/wikis/%E5%A4%9A%E4%B8%96%E7%95%8C%E6%94%AF%E6%8C%81)
 
 [THBI Git WIKI](http://git.thbi.cc/yinzi/AgentEnvCoEvolution/wiki/%E5%A4%9A%E4%B8%96%E7%95%8C%E6%94%AF%E6%8C%81)
 
-# 安装
+# Installation
 
 ```shell
 git clone http://git.thbi.cc/yinzi/AgentEnvCoEvolution.git
@@ -30,29 +56,29 @@ pip install pygame
 pip install tqdm
 ```
 
-# 键盘控制
+# Keyboard Control
 
-1. 开启Unity工程TIleMapRender，运行，运行成功会提示监听端口
-2. 运行test_grpc.py
-3. 鼠标焦点放在pygame窗口中，然后使用键盘控制| 按键 | 动作   |
+1. Open the Unity project TileMapRender, run it, and it will prompt to listen to the gRPC port if it runs successfully
+2. python3 test_grpc.py
+3. Mouse focus in the pygame window, then use the keyboard to control:
+   | Keys | Actions   |
    | ---- | ------ |
-   | ↑   | 向前走 |
-   | ↓   | 向后走 |
-   | ←   | 向左走 |
-   | →   | 向右走 |
-   | Q    | 向左转 |
-   | E    | 向右转 |
-   | R    | 向上转 |
-   | F    | 向下转 |
-   | 空格 | 跳跃   |
+   | ↑   | Up |
+   | ↓   | Down |
+   | ←   | Left |
+   | →   | Right |
+   | Q    | Turn Left |
+   | E    | Turn Right  |
+   | R    | Look Up |
+   | F    | Look Down |
+   | Space | Jump   |
 
-# agent和环境联合演化
+# Joint WFC mutation
 
-1. 依赖李今的pcgworker库，该库目前需手动安装，并注意路径
-
+1.  Install WFC repo
    https://gitee.com/electricsoul/pcgworker
-2. 打开Unity工程TIleMapRender，运行，运行成功会提示监听端口
-3. 训练
+2.  Open the Unity project TileMapRender, run it, and it will prompt to listen to the gRPC port if it runs successfully
+3. Start Training
 
    ```shell
    python simple_train.py --train_eposides 2000 --train_steps 5000 --evlaute_steps 2000 --evol_evaluate_steps 2000 --evlaute_eposide 10

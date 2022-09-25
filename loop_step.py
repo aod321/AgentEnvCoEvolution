@@ -23,15 +23,17 @@ import pygame
 _FRAMES_PER_SEC = 50
 _FRAME_DELAY_MS = int(1000.0 // _FRAMES_PER_SEC)
 
-_ACTION_NOTHING = 0
-_ACTION_LOOKLEFT = 1
-_ACTION_LOOKRIGHT = 2
-_ACTION_LOOKUP = 3
-_ACTION_LOOKDOWN = 4
-_ACTION_LEFT = 5
-_ACTION_RIGHT = 6
-_ACTION_FORWARD = 7
-_ACTION_BACKWARD = 8
+
+_ACTION_NOTHING = 7
+# _ACTION_LOOKUP = 3
+# _ACTION_LOOKDOWN = 4
+_ACTION_FORWARD = 0
+_ACTION_BACKWARD = 1
+_ACTION_LEFT = 2
+_ACTION_RIGHT = 3
+_ACTION_LOOKLEFT = 4
+_ACTION_LOOKRIGHT = 5
+_ACTION_SLOWFORWARD = 6
 
 _ACTION_PADDLE = 'paddle'
 _ACTION_JUMP = 'jump'
@@ -79,7 +81,7 @@ def main():
         with env:
             start = time.time()
             while count<10000:
-                actions = {_ACTION_PADDLE: [7],
+                actions = {_ACTION_PADDLE: [0],
                            _ACTION_JUMP: [1]}
                 timestep = env.step(actions)
                 count += 1

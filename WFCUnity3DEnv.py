@@ -58,7 +58,7 @@ class WFCUnity3DEnv(GymFromDMEnv):
                 "OBSERVATIONS": self.TASK_OBSERVATIONS,
                 "num_action_repeats": 1,
                 "filename": file_name,
-                "timescale": 2
+                "timescale": 1
             }
         else:
             if "wave" in config:
@@ -79,7 +79,7 @@ class WFCUnity3DEnv(GymFromDMEnv):
             if "filename" not in config:
                 config["filename"] = file_name
             if "timescale" not in config:
-                config["timescale"] = 2
+                config["timescale"] = 1
         
         if env is None:
             if config["filename"] is None:

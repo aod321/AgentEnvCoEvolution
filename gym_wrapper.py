@@ -44,7 +44,8 @@ class GymFromDMEnv(gym.Env):
   
   def action_space(self) -> spaces.Discrete:
     action_spec = self._env.action_spec()  # type: specs.DiscreteArray
-    return spaces.Discrete(9)
+    # return spaces.Discrete(9)
+    return spaces.Discrete(7)
 
   def observation_space(self) -> spaces.Box:
     obs_spec = self._env.observation_spec()  # type: specs.Array
