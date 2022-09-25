@@ -8,19 +8,6 @@ Due to the large size of the complete project file, only the Scripts are kept.
 [GRPCServer repo](https://github.com/aod321/GRPCServer)
 # Agent-world co-evolution
 
-<!-- this link magically rendered as video, unfortunately not in docs -->
-
-
-<!--
-<a href='https://cloud.tsinghua.edu.cn/f/0319ceed3f214085ba1f/?dl=1' >
-<div align="center">
-  <img src="http://arogozhnikov.github.io/images/einops/einops_video.gif" alt="einops package examples" />
-  <br>
-  <small><a href='https://cloud.tsinghua.edu.cn/f/0319ceed3f214085ba1f/?dl=1'>This video in high quality (mp4)</a></small>
-  <br><br>
-</div>
-</a>
--->
 ![](https://cloud.tsinghua.edu.cn/f/efdd19d0ed444bccaa98/?dl=1)
 ![](https://cloud.tsinghua.edu.cn/f/bf6468c7360b41e99653/?dl=1)
 # Multi-world and Multi-agent 
@@ -28,10 +15,10 @@ Due to the large size of the complete project file, only the Scripts are kept.
 ## Demos
 
 1. multi-agent
-![multi-agent](https://cloud.tsinghua.edu.cn/f/d3a60a1b4c8e417a8572/?dl=1)
+![](https://cloud.tsinghua.edu.cn/f/d3a60a1b4c8e417a8572/?dl=1)
 
 2. multi-world and multi-agent
-![multi-world&multi-agent](https://cloud.tsinghua.edu.cn/f/28b5e72dd2fd4878901e/?dl=1)
+![](https://cloud.tsinghua.edu.cn/f/28b5e72dd2fd4878901e/?dl=1)
 
 ## Development Diary(in Chinese)
 [Gitee Wiki](https://gitee.com/aod321/AgentEnvCoEvolution/wikis/%E5%A4%9A%E4%B8%96%E7%95%8C%E6%94%AF%E6%8C%81)
